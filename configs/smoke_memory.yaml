@@ -1,0 +1,56 @@
+project_root: ..
+
+# Short GPU-memory probe after the end-to-end smoke test.
+data: data/processed/aic_multispectral.yaml
+model: yolo26s-p2.yaml
+pretrained: weights/yolo26s.pt
+
+tri_augment:
+  probability: 0.80
+  infrared_gain: 0.15
+  depth_hole_probability: 0.25
+  modality_dropout_probability: 0.08
+
+train:
+  project: outputs
+  name: smoke_memory_batch6
+  exist_ok: true
+  epochs: 1
+  fraction: 0.02
+  imgsz: 960
+  batch: 6
+  workers: 0
+  device: 0
+  amp: true
+  cache: false
+  optimizer: AdamW
+  lr0: 0.0015
+  lrf: 0.05
+  weight_decay: 0.0005
+  warmup_epochs: 0
+  cos_lr: true
+  close_mosaic: 0
+  box: 7.5
+  cls: 0.5
+  cls_pw: 0.15
+  dfl: 1.5
+  degrees: 3.0
+  translate: 0.08
+  scale: 0.40
+  shear: 1.0
+  perspective: 0.0002
+  flipud: 0.0
+  fliplr: 0.5
+  mosaic: 0.65
+  mixup: 0.05
+  cutmix: 0.0
+  hsv_h: 0.0
+  hsv_s: 0.0
+  hsv_v: 0.0
+  max_det: 100
+  seed: 2026
+  deterministic: true
+  val: false
+  plots: false
+  save: false
+  verbose: true

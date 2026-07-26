@@ -1,0 +1,60 @@
+# Python bytecode and tool caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.ipynb_checkpoints/
+
+# Virtual environments and local secrets
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+
+# Packaging/build products
+build/
+dist/
+*.egg-info/
+
+# Editors, OS metadata and local agent state
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.agents/
+.codex/
+
+# Competition data and generated data metadata
+# Official train/test files must not be uploaded to a public repository.
+data/
+artifacts/
+
+# Model weights, exported models and experiment outputs
+outputs/
+runs/
+weights/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.engine
+*.torchscript
+*.tflite
+
+# Submission packages, downloaded archives and logs
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.log
+
+# Local-only competition documents requested by the project owner
+aictext.pdf
+AIC多模态目标检测高分方案.md

@@ -1,0 +1,16 @@
+project_root: ..
+
+train_root: data/AIC2026_Train_2000
+test_root: data/AIC2026_PHASE_1_1000
+artifacts_dir: artifacts
+train_manifest: artifacts/train_manifest.jsonl
+test_manifest: artifacts/test_manifest.jsonl
+audit_report: artifacts/audit_report.json
+split: artifacts/split.json
+processed_root: data/processed
+
+split_options:
+  val_fraction: 0.20
+  seed: 2026
+  trials: 4000
+  phash_distance: 4
