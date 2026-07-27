@@ -33,7 +33,7 @@ Thumbs.db
 
 # Competition data and generated data metadata
 # Official train/test files must not be uploaded to a public repository.
-data/
+/data/
 artifacts/
 
 # Model weights, exported models and experiment outputs
