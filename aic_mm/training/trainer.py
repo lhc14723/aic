@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import torch
 from ultralytics.models.yolo.detect.train import DetectionTrainer
 from ultralytics.nn.tasks import DetectionModel
 from ultralytics.utils import RANK, colorstr
@@ -19,6 +20,38 @@ def _weights_have_custom_stem(weights: Any) -> bool:
     source = weights.get("model") if isinstance(weights, dict) else weights
     layers = getattr(source, "model", None)
     return bool(layers is not None and len(layers) and isinstance(layers[0], TriModalStem))
+
+
+def _assert_loss_integrity(trainer: DetectionTrainer) -> None:
+    """Abort immediately when a loss tensor is negative or non-finite.
+
+    A failed process can then be resumed by the external supervisor from the
+    previous epoch checkpoint instead of allowing invalid arithmetic to
+    contaminate subsequent checkpoints.
+    """
+    loss_items = getattr(trainer, "loss_items", None)
+    if isinstance(loss_items, dict) and loss_items:
+        named_values = list(loss_items.items())
+    else:
+        loss = getattr(trainer, "loss", None)
+        if loss is None:
+            return
+        named_values = [("loss", loss)]
+
+    tensors = [
+        value.detach().reshape(-1)
+        for _, value in named_values
+        if isinstance(value, torch.Tensor) and value.numel()
+    ]
+    if not tensors:
+        return
+    values = torch.cat(tensors).to(device="cpu", dtype=torch.float32)
+    if not bool(torch.isfinite(values).all()):
+        snapshot = {name: value.detach().cpu().tolist() for name, value in named_values}
+        raise FloatingPointError(f"QUALITY_GUARD_NONFINITE_LOSS {snapshot}")
+    if float(values.min()) < -1e-7:
+        snapshot = {name: value.detach().cpu().tolist() for name, value in named_values}
+        raise FloatingPointError(f"QUALITY_GUARD_NEGATIVE_LOSS {snapshot}")
 
 
 class TriModalDetectionTrainer(DetectionTrainer):
@@ -110,4 +143,5 @@ def run_training(config_path: str | Path) -> None:
         overrides=train_settings,
         tri_augment=dict(config.get("tri_augment") or {}),
     )
+    trainer.add_callback("on_train_batch_end", _assert_loss_integrity)
     trainer.train()

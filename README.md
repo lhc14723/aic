@@ -86,6 +86,27 @@ python -m scripts.package_submission
 
 `package_submission.py` 会检查恰好 1000 个 TXT、每行六列、类别/坐标/置信度范围、每图最大目标数和置信度排序，并保证 ZIP 根目录直接放置结果文件。不要手动修改任何测试结果。
 
+## RTX 4090D 长时间训练与审计
+
+`configs/*_4090d_clean*.yaml` 是 RTX 4090D 上使用的固定参数与断点恢复配置。
+`supervisor_4090d_clean.sh` 按第一阶段、高分辨率、全量训练、推理和打包的顺序执行，
+并在中断后校验 checkpoint 再恢复；`watchdog_4090d_clean.sh` 负责监控 supervisor，
+`auditor_4090d_clean.sh` 和 `post_audit_probe_4090d.sh` 用于提交包及训练结果审计。
+
+这些运维脚本记录的是当前云实例路径 `/home/waas/aic` 和对应 Conda 环境。迁移到其他
+服务器时，应先统一修改脚本开头的项目目录与 Python 路径，再运行：
+
+```bash
+bash supervisor_4090d_clean.sh
+bash watchdog_4090d_clean.sh
+```
+
+场景内检索探针使用 `configs/train_intrascene_probe_s_4090d.yaml`，配套工具位于：
+
+- `scripts/make_intrascene_probe_split.py`
+- `scripts/analyze_intrascene_retrieval.py`
+- `scripts/audit_submission_strict.py`
+
 ## 验证与调参纪律
 
 所有阈值、分辨率和增强参数只根据固定训练验证集决定。需要验证某个权重时，可让 Ultralytics 在 `data/processed/aic_multispectral.yaml` 的 `val` 集上输出 TXT，再运行：

@@ -1,0 +1,57 @@
+project_root: ..
+
+# Use only after all architecture/hyperparameter decisions are frozen.
+data: data/processed/aic_multispectral_all.yaml
+model: yolo26s-p2.yaml
+pretrained: outputs/aic_fusion_stage1_4090d_clean/weights/best.pt
+
+tri_augment:
+  probability: 0.45
+  infrared_gain: 0.08
+  depth_hole_probability: 0.10
+  modality_dropout_probability: 0.03
+
+train:
+  project: outputs
+  name: aic_fusion_final_all_4090d_clean
+  exist_ok: true
+  epochs: 30
+  patience: 30
+  imgsz: 960
+  batch: 4
+  workers: 4
+  device: 0
+  resume: outputs/aic_fusion_final_all_4090d_clean/weights/last_resume.pt
+  amp: false
+  cache: false
+  optimizer: AdamW
+  lr0: 0.00015
+  lrf: 0.10
+  weight_decay: 0.0005
+  warmup_epochs: 1
+  cos_lr: true
+  close_mosaic: 8
+  box: 7.5
+  cls: 0.5
+  cls_pw: 0.15
+  dfl: 1.5
+  degrees: 1.5
+  translate: 0.04
+  scale: 0.20
+  shear: 0.3
+  perspective: 0.0001
+  flipud: 0.0
+  fliplr: 0.5
+  mosaic: 0.10
+  mixup: 0.0
+  cutmix: 0.0
+  hsv_h: 0.0
+  hsv_s: 0.0
+  hsv_v: 0.0
+  max_det: 100
+  seed: 2028
+  deterministic: true
+  save_period: 5
+  val: false
+  plots: true
+  verbose: true
