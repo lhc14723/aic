@@ -1,0 +1,14 @@
+project_root: ..
+
+weights: outputs/aic_fusion_final_all_4090d_clean/weights/last.pt
+image_dir: data/processed/images/test
+output_dir: outputs/test_predictions_4090d_clean
+
+predict:
+  imgsz: 960
+  confidence: 0.001
+  iou: 0.70
+  max_det: 100
+  device: 0
+  half: true
+  batch: 1

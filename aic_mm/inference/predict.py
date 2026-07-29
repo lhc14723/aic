@@ -57,7 +57,7 @@ def predict_test_set(
 
     model = YOLO(str(weights), task="detect")
     results = model.predict(
-        source=[str(path) for path in image_paths],
+        source=str(image_dir),
         imgsz=imgsz,
         conf=confidence,
         iou=iou,

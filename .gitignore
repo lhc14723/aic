@@ -36,11 +36,16 @@ Thumbs.db
 /data/
 artifacts/
 
-# Model weights, exported models and experiment outputs
+# Model weights, exported models and experiment outputs.
+# Final trained competition weights are stored via git LFS under weights/ ; all
+# other PT artifacts produced by intermediate training runs stay ignored.
 outputs/
 runs/
 weights/
+!weights/
+!weights/**
 *.pt
+!weights/**/*.pt
 *.pth
 *.ckpt
 *.onnx
@@ -54,6 +59,10 @@ weights/
 *.tar.gz
 *.7z
 *.log
+
+# Runtime locks and hardware-dispute diagnostics from cloud training
+*.lock
+diagnostics/
 
 # Local-only competition documents requested by the project owner
 aictext.pdf
