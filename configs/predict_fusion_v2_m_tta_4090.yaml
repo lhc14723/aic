@@ -1,0 +1,19 @@
+project_root: ..
+
+# Automatic single-model TTA. Stage 3 has no honest validation set, so use its
+# final last.pt rather than selecting best.pt on training-exposed images.
+weights: outputs/aic_fusion_v2_m_final_all_4090/weights/last.pt
+image_dir: data/processed/images/test
+output_dir: outputs/test_predictions_fusion_v2_m_tta_4090
+
+predict:
+  imgsz: 1280
+  confidence: 0.001
+  iou: 0.70
+  max_det: 100
+  device: 0
+  half: true
+  batch: 4
+  tta_scales: [960, 1280]
+  tta_flip: true
+  tta_fusion_iou: 0.65

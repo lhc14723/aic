@@ -1,0 +1,58 @@
+project_root: ..
+
+# Run only after V2 stage1/high-resolution choices are frozen on clean val.
+data: data/processed/aic_multispectral_all.yaml
+model: yolo26s-p2.yaml
+pretrained: outputs/aic_fusion_v2_clean_highres/weights/best.pt
+fusion_variant: v2
+
+tri_augment:
+  probability: 0.30
+  infrared_gain: 0.05
+  depth_hole_probability: 0.03
+  modality_dropout_probability: 0.0
+
+train:
+  project: outputs
+  name: aic_fusion_v2_highres_final_all
+  exist_ok: false
+  epochs: 20
+  patience: 20
+  imgsz: 1280
+  rect: true
+  batch: 2
+  workers: 1
+  device: 0
+  amp: true
+  cache: false
+  optimizer: AdamW
+  lr0: 0.00008
+  lrf: 0.15
+  weight_decay: 0.0005
+  warmup_epochs: 1
+  cos_lr: true
+  close_mosaic: 0
+  box: 8.0
+  cls: 0.55
+  cls_pw: 0.20
+  dfl: 1.75
+  degrees: 0.8
+  translate: 0.02
+  scale: 0.10
+  shear: 0.0
+  perspective: 0.0
+  flipud: 0.0
+  fliplr: 0.5
+  mosaic: 0.0
+  mixup: 0.0
+  cutmix: 0.0
+  hsv_h: 0.0
+  hsv_s: 0.0
+  hsv_v: 0.0
+  max_det: 100
+  seed: 2034
+  deterministic: true
+  save_period: 5
+  val: false
+  plots: true
+  verbose: true

@@ -1,12 +1,17 @@
 # AIC 2026 城市场景多模态目标检测
 
+当前推荐的高分路线是 YOLO26m-P2 + V2 逐通道多模态融合。单卡 RTX 4090
+从环境检查、冒烟、三阶段训练到TTA打包的唯一当前入口见
+`YOLO26M_V2_4090_RUNBOOK.md`。旧的 YOLO26s/V1 配置保留用于复现实验，不应与
+新路线混用。
+
 本项目实现单模型、全自动的 RGB/红外/深度目标检测流水线。它严格区分官方原始数据和派生数据：原始目录只读，训练/验证划分、越界框修正、8 通道编码、推理结果均可追溯生成；测试集不参与标注、调参或人工编辑。
 
 ## 方案结构
 
 - `aic_mm/data`：数据审计、场景分组划分、8 通道编码、模态增强
 - `aic_mm/models`：RGB/红外/深度三分支质量门控融合 stem
-- `aic_mm/training`：YOLO26s-P2 自定义训练器
+- `aic_mm/training`：YOLO26m-P2/V2 自定义训练器
 - `aic_mm/evaluation`：本地训练验证集 101 点插值 mAP
 - `aic_mm/inference`：测试集自动推理、格式校验和 ZIP 打包
 - `configs`：预处理、第一阶段训练、高分辨率微调和推理配置
@@ -21,7 +26,7 @@
 
 ```bash
 mkdir -p weights
-python -c "from ultralytics.utils.downloads import attempt_download_asset; print(attempt_download_asset('weights/yolo26s.pt'))"
+python -c "from ultralytics.utils.downloads import attempt_download_asset; print(attempt_download_asset('weights/yolo26m.pt'))"
 ```
 
 这会通过已安装 Ultralytics 的官方资源下载器获取公开预训练权重。比赛任务书允许使用公开预训练权重；训练数据仍只使用官方训练集。
@@ -55,57 +60,45 @@ python -m scripts.make_split
 python -m scripts.build_multispectral --workers 2 --yes
 ```
 
-开始第一阶段训练：
+RTX 4090 上先执行预检和冒烟：
 
 ```bash
-python -m scripts.train --config configs/train_fusion.yaml --yes
+python -m scripts.preflight_4090
+python -m scripts.train --config configs/smoke_fusion_v2_m_4090.yaml --yes
 ```
 
-RTX 5060 Laptop 8GB 的实测配置是 `imgsz=960, batch=4, workers=1, AMP`；端到端冒烟测试中 `batch=2` 峰值约 2.5GB，压力测试中 `batch=6` 峰值约 7.28GB，因此正式训练取更稳妥的 4。若桌面程序额外占用显存导致不足，再把 `batch` 改为 `2`；不要降低图像尺寸。训练完成后，用同一个模型继续高分辨率微调，不属于多模型集成：
+冒烟通过后依次运行三阶段训练：
 
 ```bash
-python -m scripts.train --config configs/finetune_highres.yaml --yes
+python -m scripts.train --config configs/train_fusion_v2_m_4090.yaml --yes
+python -m scripts.train --config configs/smoke_fusion_v2_m_highres_4090.yaml --yes
+python -m scripts.train --config configs/finetune_fusion_v2_m_highres_4090.yaml --yes
+python -m scripts.train --config configs/final_all_fusion_v2_m_4090.yaml --yes
 ```
-
-高分辨率阶段默认 `imgsz=1280, batch=1`。如果 1280 仍然显存不足，可在该配置中改为 1152。
-
-只有在模型结构、训练轮数和超参数已经依据固定验证集确定后，才用全部 2000 张官方训练图做最后一次短程收敛。此阶段关闭验证，不能再根据它反向调参：
-
-```bash
-python -m scripts.train --config configs/final_all_data.yaml --yes
-```
-
-推理配置默认读取这个全量训练阶段的 `last.pt`。如果全量阶段尚未执行，应明确把 `configs/predict.yaml` 的 `weights` 改回已经验证过的 `outputs/aic_fusion_highres/weights/best.pt`。
 
 测试推理和提交打包：
 
 ```bash
-python -m scripts.predict --config configs/predict.yaml
-python -m scripts.package_submission
+python -m scripts.predict --config configs/predict_fusion_v2_m_tta_4090.yaml
+python -m scripts.package_submission \
+  --predictions outputs/test_predictions_fusion_v2_m_tta_4090 \
+  --test-images data/processed/images/test \
+  --output outputs/submission_fusion_v2_m_tta_4090.zip
 ```
 
 `package_submission.py` 会检查恰好 1000 个 TXT、每行六列、类别/坐标/置信度范围、每图最大目标数和置信度排序，并保证 ZIP 根目录直接放置结果文件。不要手动修改任何测试结果。
 
-## RTX 4090D 长时间训练与审计
+## RTX 4090 长时间训练与恢复
 
-`configs/*_4090d_clean*.yaml` 是 RTX 4090D 上使用的固定参数与断点恢复配置。
-`supervisor_4090d_clean.sh` 按第一阶段、高分辨率、全量训练、推理和打包的顺序执行，
-并在中断后校验 checkpoint 再恢复；`watchdog_4090d_clean.sh` 负责监控 supervisor，
-`auditor_4090d_clean.sh` 和 `post_audit_probe_4090d.sh` 用于提交包及训练结果审计。
-
-这些运维脚本记录的是当前云实例路径 `/home/waas/aic` 和对应 Conda 环境。迁移到其他
-服务器时，应先统一修改脚本开头的项目目录与 Python 路径，再运行：
+当前路线不使用旧的 `supervisor_4090d_clean.sh`。在 `tmux` 中逐阶段执行，并在意外
+中断时对同一个正式配置添加：
 
 ```bash
-bash supervisor_4090d_clean.sh
-bash watchdog_4090d_clean.sh
+--resume outputs/对应阶段/weights/last.pt
 ```
 
-场景内检索探针使用 `configs/train_intrascene_probe_s_4090d.yaml`，配套工具位于：
-
-- `scripts/make_intrascene_probe_split.py`
-- `scripts/analyze_intrascene_retrieval.py`
-- `scripts/audit_submission_strict.py`
+完整命令、输出目录、显存降级顺序和备份清单见
+`YOLO26M_V2_4090_RUNBOOK.md`。
 
 ## 验证与调参纪律
 

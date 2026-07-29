@@ -1,0 +1,58 @@
+project_root: ..
+
+# One-epoch local GPU and data-pipeline probe. This is not a score-bearing run.
+data: data/processed/aic_multispectral.yaml
+model: yolo26s-p2.yaml
+pretrained: weights/final_all_4090d_clean/best.pt
+
+tri_augment:
+  probability: 0.45
+  infrared_gain: 0.08
+  depth_hole_probability: 0.10
+  modality_dropout_probability: 0.03
+
+train:
+  project: outputs
+  name: smoke_highres_rect
+  exist_ok: true
+  epochs: 1
+  patience: 1
+  fraction: 0.02
+  imgsz: 1280
+  rect: true
+  batch: 2
+  workers: 0
+  device: 0
+  amp: true
+  cache: false
+  optimizer: AdamW
+  lr0: 0.0001
+  lrf: 0.10
+  weight_decay: 0.0005
+  warmup_epochs: 0
+  cos_lr: true
+  close_mosaic: 0
+  box: 7.5
+  cls: 0.5
+  cls_pw: 0.15
+  dfl: 1.5
+  degrees: 1.0
+  translate: 0.02
+  scale: 0.15
+  shear: 0.0
+  perspective: 0.0
+  flipud: 0.0
+  fliplr: 0.5
+  mosaic: 0.0
+  mixup: 0.0
+  cutmix: 0.0
+  hsv_h: 0.0
+  hsv_s: 0.0
+  hsv_v: 0.0
+  max_det: 100
+  seed: 2030
+  deterministic: true
+  val: false
+  plots: false
+  save: false
+  verbose: true

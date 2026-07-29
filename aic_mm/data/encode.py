@@ -234,9 +234,11 @@ def _encode_one(
     return dict(stats)
 
 
-def _dataset_yaml(output_root: Path, *, all_training_images: bool = False) -> dict[str, Any]:
+def _dataset_yaml(_output_root: Path, *, all_training_images: bool = False) -> dict[str, Any]:
+    # Deliberately omit ``path``. Ultralytics then resolves train/val/test
+    # relative to this YAML file, so a complete processed directory can be
+    # moved from WSL to any cloud-server location without rewriting paths.
     config = {
-        "path": str(output_root.resolve()),
         "train": ["images/train", "images/val"] if all_training_images else "images/train",
         "val": "images/val",
         "test": "images/test",

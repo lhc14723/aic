@@ -1,0 +1,61 @@
+project_root: ..
+
+# Mandatory 4090 preflight: same model, augmentations, resolution and batch as
+# stage 1, but only 5% of the clean training split for one epoch.
+# Its metrics and checkpoints are not score-bearing and must not be submitted.
+data: data/processed/aic_multispectral.yaml
+model: yolo26m-p2.yaml
+pretrained: weights/yolo26m.pt
+fusion_variant: v2
+
+tri_augment:
+  probability: 0.65
+  infrared_gain: 0.10
+  depth_hole_probability: 0.10
+  modality_dropout_probability: 0.02
+
+train:
+  project: outputs
+  name: smoke_fusion_v2_m_4090_do_not_submit
+  exist_ok: false
+  epochs: 1
+  patience: 1
+  fraction: 0.05
+  imgsz: 960
+  multi_scale: 0.15
+  batch: 8
+  workers: 4
+  device: 0
+  amp: true
+  cache: false
+  optimizer: AdamW
+  lr0: 0.0012
+  lrf: 0.05
+  weight_decay: 0.0005
+  warmup_epochs: 0
+  cos_lr: true
+  close_mosaic: 0
+  box: 8.0
+  cls: 0.55
+  cls_pw: 0.25
+  dfl: 1.75
+  degrees: 2.5
+  translate: 0.06
+  scale: 0.35
+  shear: 0.5
+  perspective: 0.0001
+  flipud: 0.0
+  fliplr: 0.5
+  mosaic: 0.50
+  mixup: 0.03
+  cutmix: 0.0
+  hsv_h: 0.0
+  hsv_s: 0.0
+  hsv_v: 0.0
+  max_det: 100
+  seed: 2040
+  deterministic: true
+  save_period: -1
+  plots: false
+  val: true
+  verbose: true

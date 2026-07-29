@@ -4,6 +4,7 @@ from zipfile import ZipFile
 import pytest
 
 from aic_mm.inference.submission import package_submission, validate_prediction_directory
+from scripts.package_submission import _expected_ids
 
 
 def test_submission_validation_and_root_layout(tmp_path: Path) -> None:
@@ -23,3 +24,12 @@ def test_submission_rejects_missing_file(tmp_path: Path) -> None:
     predictions.mkdir()
     with pytest.raises(ValueError, match="missing files"):
         validate_prediction_directory(predictions, ["a"])
+
+
+def test_expected_ids_fall_back_to_processed_test_images(tmp_path: Path) -> None:
+    images = tmp_path / "images"
+    images.mkdir()
+    (images / "b.tiff").touch()
+    (images / "a.tiff").touch()
+    (images / "ignored.png").touch()
+    assert _expected_ids(None, str(images)) == ["a", "b"]

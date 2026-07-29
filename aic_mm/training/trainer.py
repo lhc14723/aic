@@ -7,19 +7,44 @@ from typing import Any
 
 import torch
 from ultralytics.models.yolo.detect.train import DetectionTrainer
+from ultralytics.nn.modules import Conv
 from ultralytics.nn.tasks import DetectionModel
 from ultralytics.utils import RANK, colorstr
 from ultralytics.utils.torch_utils import unwrap_model
 
 from aic_mm.config import load_config, project_path, require_mapping
 from aic_mm.data.dataset import TriModalYOLODataset
-from aic_mm.models.fusion import TriModalStem, replace_first_layer_with_tri_modal_stem
+from aic_mm.models.fusion import (
+    FusionVariant,
+    TriModalStem,
+    TriModalStemV2,
+    initialize_stem_from_rgb_conv,
+    replace_first_layer_with_tri_modal_stem,
+)
 
 
 def _weights_have_custom_stem(weights: Any) -> bool:
     source = weights.get("model") if isinstance(weights, dict) else weights
     layers = getattr(source, "model", None)
     return bool(layers is not None and len(layers) and isinstance(layers[0], TriModalStem))
+
+
+def _weights_fusion_variant(weights: Any) -> FusionVariant | None:
+    source = weights.get("model") if isinstance(weights, dict) else weights
+    layers = getattr(source, "model", None)
+    if layers is None or not len(layers):
+        return None
+    if isinstance(layers[0], TriModalStemV2):
+        return "v2"
+    if isinstance(layers[0], TriModalStem):
+        return "v1"
+    return None
+
+
+def _weights_first_conv(weights: Any) -> Any:
+    source = weights.get("model") if isinstance(weights, dict) else weights
+    layers = getattr(source, "model", None)
+    return layers[0] if layers is not None and len(layers) else None
 
 
 def _assert_loss_integrity(trainer: DetectionTrainer) -> None:
@@ -57,8 +82,17 @@ def _assert_loss_integrity(trainer: DetectionTrainer) -> None:
 class TriModalDetectionTrainer(DetectionTrainer):
     """Detection trainer that installs the fusion stem and sensor augmentation."""
 
-    def __init__(self, *args: Any, tri_augment: dict[str, Any] | None = None, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *args: Any,
+        tri_augment: dict[str, Any] | None = None,
+        fusion_variant: FusionVariant | None = None,
+        **kwargs: Any,
+    ) -> None:
         self.tri_augment = dict(tri_augment or {})
+        if fusion_variant not in (None, "v1", "v2"):
+            raise ValueError("fusion_variant must be one of: null, 'v1', 'v2'")
+        self.fusion_variant = fusion_variant
         super().__init__(*args, **kwargs)
 
     def get_model(self, cfg: str | None = None, weights: Any = None, verbose: bool = True):
@@ -70,15 +104,21 @@ class TriModalDetectionTrainer(DetectionTrainer):
                 verbose=verbose and RANK == -1,
             )
         )
-        # A custom checkpoint already contains branch-specific parameters and
-        # therefore needs the same module layout before state-dict transfer.
+        checkpoint_variant = _weights_fusion_variant(weights) if weights is not None else None
+        target_variant: FusionVariant = self.fusion_variant or checkpoint_variant or "v1"
+        # A custom checkpoint needs a compatible branch layout before transfer.
+        # When V2 is explicitly requested from V1 weights, common branch
+        # tensors transfer and the wider gate is initialized safely.
         if weights is not None and _weights_have_custom_stem(weights):
-            replace_first_layer_with_tri_modal_stem(model)
+            replace_first_layer_with_tri_modal_stem(model, variant=target_variant)
             model.load(weights)
         else:
             if weights is not None:
                 model.load(weights)
-            replace_first_layer_with_tri_modal_stem(model)
+            stem = replace_first_layer_with_tri_modal_stem(model, variant=target_variant)
+            source_conv = _weights_first_conv(weights) if weights is not None else None
+            if isinstance(source_conv, Conv):
+                initialize_stem_from_rgb_conv(stem, source_conv)
         return model
 
     def build_dataset(self, img_path: str, mode: str = "train", batch: int | None = None):
@@ -111,7 +151,7 @@ class TriModalDetectionTrainer(DetectionTrainer):
         super().plot_training_samples(visible_batch, ni)
 
 
-def run_training(config_path: str | Path) -> None:
+def run_training(config_path: str | Path, *, resume: str | Path | None = None) -> None:
     """Validate project configuration and start an explicitly requested run."""
     config = load_config(config_path)
     train_settings = dict(require_mapping(config, "train"))
@@ -124,12 +164,27 @@ def run_training(config_path: str | Path) -> None:
     if not pretrained.is_file():
         raise FileNotFoundError(
             f"Pretrained checkpoint not found: {pretrained}. "
-            "Download the official YOLO26s checkpoint before training."
+            f"Download or transfer the configured {pretrained.name} checkpoint before training."
         )
 
     project_value = train_settings.get("project")
     if project_value:
         train_settings["project"] = str(project_path(config, project_value))
+    resume_value = resume if resume is not None else train_settings.get("resume")
+    if isinstance(resume_value, (str, Path)):
+        resume_path = project_path(config, resume_value)
+        if not resume_path.is_file():
+            raise FileNotFoundError(f"Resume checkpoint not found: {resume_path}")
+        run_name = train_settings.get("name")
+        if project_value and run_name:
+            expected_run = (project_path(config, project_value) / str(run_name)).resolve()
+            if resume_path.parent.parent.resolve() != expected_run:
+                raise ValueError(
+                    f"Resume checkpoint belongs to {resume_path.parent.parent}, "
+                    f"but config output is {expected_run}"
+                )
+        train_settings["resume"] = str(resume_path)
+        train_settings["exist_ok"] = True
     train_settings.update(
         {
             "data": str(data_path),
@@ -142,6 +197,7 @@ def run_training(config_path: str | Path) -> None:
     trainer = TriModalDetectionTrainer(
         overrides=train_settings,
         tri_augment=dict(config.get("tri_augment") or {}),
+        fusion_variant=config.get("fusion_variant"),
     )
     trainer.add_callback("on_train_batch_end", _assert_loss_integrity)
     trainer.train()

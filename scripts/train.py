@@ -12,6 +12,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="configs/train_fusion.yaml")
     parser.add_argument(
+        "--resume",
+        default=None,
+        help="Resume this config's interrupted run from a compatible last.pt.",
+    )
+    parser.add_argument(
         "--yes",
         action="store_true",
         help="Acknowledge that this starts a long, GPU-intensive training run.",
@@ -19,7 +24,7 @@ def main() -> None:
     args = parser.parse_args()
     if not args.yes:
         raise SystemExit("Training is a long GPU task. Re-run with --yes when ready.")
-    run_training(args.config)
+    run_training(args.config, resume=args.resume)
 
 
 if __name__ == "__main__":

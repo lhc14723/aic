@@ -1,0 +1,17 @@
+project_root: ..
+
+weights: weights/final_all_4090d_clean/best.pt
+image_dir: data/processed/images/test
+output_dir: outputs/test_predictions_existing_tta
+
+predict:
+  imgsz: 1280
+  confidence: 0.001
+  iou: 0.70
+  max_det: 100
+  device: 0
+  half: true
+  batch: 1
+  tta_scales: [960, 1280]
+  tta_flip: true
+  tta_fusion_iou: 0.65

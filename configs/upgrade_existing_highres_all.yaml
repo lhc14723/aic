@@ -1,0 +1,60 @@
+project_root: ..
+
+# Lowest-risk score upgrade: continue the proven V1 checkpoint on all 2000
+# official training images at higher resolution. This does not provide an
+# independent validation score because the source checkpoint has seen val.
+data: data/processed/aic_multispectral_all.yaml
+model: yolo26s-p2.yaml
+pretrained: weights/final_all_4090d_clean/best.pt
+fusion_variant: v1
+
+tri_augment:
+  probability: 0.35
+  infrared_gain: 0.06
+  depth_hole_probability: 0.05
+  modality_dropout_probability: 0.0
+
+train:
+  project: outputs
+  name: aic_v1_existing_highres_all
+  exist_ok: false
+  epochs: 15
+  patience: 15
+  imgsz: 1280
+  rect: true
+  batch: 2
+  workers: 1
+  device: 0
+  amp: true
+  cache: false
+  optimizer: AdamW
+  lr0: 0.00005
+  lrf: 0.20
+  weight_decay: 0.0005
+  warmup_epochs: 1
+  cos_lr: true
+  close_mosaic: 0
+  box: 8.0
+  cls: 0.55
+  cls_pw: 0.20
+  dfl: 1.75
+  degrees: 1.0
+  translate: 0.02
+  scale: 0.12
+  shear: 0.0
+  perspective: 0.0
+  flipud: 0.0
+  fliplr: 0.5
+  mosaic: 0.0
+  mixup: 0.0
+  cutmix: 0.0
+  hsv_h: 0.0
+  hsv_s: 0.0
+  hsv_v: 0.0
+  max_det: 100
+  seed: 2031
+  deterministic: true
+  save_period: 5
+  val: false
+  plots: true
+  verbose: true

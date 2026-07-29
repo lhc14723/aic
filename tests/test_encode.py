@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 
 from aic_mm.data.encode import (
+    _dataset_yaml,
     encode_modalities,
     sanitize_label_file,
     write_multipage_tiff,
@@ -44,3 +45,12 @@ def test_encode_and_tiff_roundtrip(tmp_path: Path) -> None:
     ok, pages = cv2.imreadmulti(str(output), flags=cv2.IMREAD_UNCHANGED)
     assert ok and len(pages) == 8
     assert np.array_equal(np.dstack(pages), encoded)
+
+
+def test_dataset_yaml_is_portable_between_project_roots(tmp_path: Path) -> None:
+    clean = _dataset_yaml(tmp_path)
+    all_data = _dataset_yaml(tmp_path, all_training_images=True)
+    assert "path" not in clean
+    assert clean["train"] == "images/train"
+    assert all_data["train"] == ["images/train", "images/val"]
+    assert clean["val"] == all_data["val"] == "images/val"

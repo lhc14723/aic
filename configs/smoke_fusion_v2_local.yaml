@@ -1,0 +1,57 @@
+project_root: ..
+
+# Pipeline-only check for V2. Metrics from 2% of training data are meaningless.
+data: data/processed/aic_multispectral.yaml
+model: yolo26s-p2.yaml
+pretrained: weights/yolo26s.pt
+fusion_variant: v2
+
+tri_augment:
+  probability: 0.65
+  infrared_gain: 0.10
+  depth_hole_probability: 0.10
+  modality_dropout_probability: 0.02
+
+train:
+  project: outputs
+  name: smoke_fusion_v2_local_do_not_submit
+  exist_ok: false
+  epochs: 1
+  patience: 1
+  fraction: 0.02
+  imgsz: 960
+  batch: 2
+  workers: 0
+  device: 0
+  amp: true
+  cache: false
+  optimizer: AdamW
+  lr0: 0.0012
+  lrf: 0.05
+  weight_decay: 0.0005
+  warmup_epochs: 0
+  cos_lr: true
+  close_mosaic: 0
+  box: 8.0
+  cls: 0.55
+  cls_pw: 0.25
+  dfl: 1.75
+  degrees: 2.5
+  translate: 0.06
+  scale: 0.35
+  shear: 0.5
+  perspective: 0.0001
+  flipud: 0.0
+  fliplr: 0.5
+  mosaic: 0.0
+  mixup: 0.0
+  cutmix: 0.0
+  hsv_h: 0.0
+  hsv_s: 0.0
+  hsv_v: 0.0
+  max_det: 100
+  seed: 2035
+  deterministic: true
+  plots: false
+  save: false
+  verbose: true

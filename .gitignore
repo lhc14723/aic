@@ -67,3 +67,7 @@ diagnostics/
 # Local-only competition documents requested by the project owner
 aictext.pdf
 AIC多模态目标检测高分方案.md
+
+# Public pretrained weights are downloaded on the server
+/weights/yolo26m.pt
+/weights/yolo26s.pt

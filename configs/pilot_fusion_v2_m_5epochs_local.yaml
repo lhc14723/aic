@@ -1,0 +1,62 @@
+project_root: ..
+
+# Five-epoch local pilot for YOLO26m-P2 + V2 multimodal fusion.
+# This uses the complete clean training split. It is intended to validate
+# learning behavior on an 8 GB laptop GPU before the long 4090 training run.
+data: data/processed/aic_multispectral.yaml
+model: yolo26m-p2.yaml
+pretrained: weights/yolo26m.pt
+fusion_variant: v2
+
+tri_augment:
+  probability: 0.65
+  infrared_gain: 0.10
+  depth_hole_probability: 0.10
+  modality_dropout_probability: 0.02
+
+train:
+  project: outputs
+  name: aic_fusion_v2_m_pilot5_local
+  exist_ok: false
+  epochs: 5
+  patience: 5
+  imgsz: 960
+  # Exercise the same mild scale jitter planned for the long stage-1 run.
+  # With batch=1, the measured 8 GB GPU headroom remains sufficient.
+  multi_scale: 0.15
+  batch: 1
+  workers: 0
+  device: 0
+  amp: true
+  cache: false
+  optimizer: AdamW
+  lr0: 0.0012
+  lrf: 0.05
+  weight_decay: 0.0005
+  warmup_epochs: 1
+  cos_lr: true
+  close_mosaic: 1
+  box: 8.0
+  cls: 0.55
+  cls_pw: 0.25
+  dfl: 1.75
+  degrees: 2.5
+  translate: 0.06
+  scale: 0.35
+  shear: 0.5
+  perspective: 0.0001
+  flipud: 0.0
+  fliplr: 0.5
+  mosaic: 0.50
+  mixup: 0.03
+  cutmix: 0.0
+  hsv_h: 0.0
+  hsv_s: 0.0
+  hsv_v: 0.0
+  max_det: 100
+  seed: 2038
+  deterministic: true
+  save_period: 1
+  plots: true
+  val: true
+  verbose: true
