@@ -20,7 +20,7 @@ train:
   patience: 35
   imgsz: 960
   multi_scale: 0.15
-  batch: 8
+  batch: 6
   workers: 4
   device: 0
   amp: true

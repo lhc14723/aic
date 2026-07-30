@@ -28,9 +28,9 @@ CONFIG_CONTRACTS: dict[str, dict[str, Any]] = {
     "configs/smoke_fusion_v2_m_4090.yaml": {
         "data": "data/processed/aic_multispectral.yaml",
         "pretrained": "weights/yolo26m.pt",
-        "name": "smoke_fusion_v2_m_4090_do_not_submit",
+        "name": "smoke_fusion_v2_m_batch6_probe_do_not_submit",
         "epochs": 1,
-        "batch": 8,
+        "batch": 6,
         "imgsz": 960,
     },
     "configs/train_fusion_v2_m_4090.yaml": {
@@ -38,7 +38,7 @@ CONFIG_CONTRACTS: dict[str, dict[str, Any]] = {
         "pretrained": "weights/yolo26m.pt",
         "name": "aic_fusion_v2_m_stage1_4090",
         "epochs": 180,
-        "batch": 8,
+        "batch": 6,
         "imgsz": 960,
     },
     "configs/smoke_fusion_v2_m_highres_4090.yaml": {

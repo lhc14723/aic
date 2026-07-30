@@ -100,7 +100,7 @@ python -m scripts.predict --config configs/predict_fusion_v2_m_tta_4090.yaml
 不要同时改变学习率、增强和模型结构：
 
 - `workers`: 使用 4；
-- `batch`: 960 阶段从 8 开始，1280 阶段从 4 开始；
+- `batch`: 960 阶段从 6 开始，1280 阶段从 4 开始，并以冒烟结果决定是否下调；
 - 保持 `amp: true`；
 - 若显存不足，依次降低 batch，不要先降低 `imgsz`。
 

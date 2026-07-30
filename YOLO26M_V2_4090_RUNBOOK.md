@@ -89,7 +89,7 @@ V2融合和各阶段 batch/分辨率。任何一项失败都不要开始正式�
 
 ## 5. 960分辨率冒烟
 
-这一步使用5%训练数据跑1轮，但保持正式第一阶段的 `batch=8`、增强和多尺度设置：
+这一步使用5%训练数据跑1轮，但保持正式第一阶段的 `batch=6`、增强和多尺度设置：
 
 ```bash
 python -m scripts.train --config configs/smoke_fusion_v2_m_4090.yaml --yes
@@ -122,7 +122,7 @@ python -m scripts.train --config configs/train_fusion_v2_m_4090.yaml --yes
 - `epochs=180`
 - `patience=35`
 - `imgsz=960`
-- `batch=8`
+- `batch=6`
 - `workers=4`
 - AMP
 - 多尺度、Mosaic、MixUp、稀有类别权重

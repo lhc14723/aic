@@ -16,14 +16,14 @@ tri_augment:
 
 train:
   project: outputs
-  name: smoke_fusion_v2_m_4090_do_not_submit
+  name: smoke_fusion_v2_m_batch6_probe_do_not_submit
   exist_ok: false
   epochs: 1
   patience: 1
   fraction: 0.05
   imgsz: 960
   multi_scale: 0.15
-  batch: 8
+  batch: 6
   workers: 4
   device: 0
   amp: true
